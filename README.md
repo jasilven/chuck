@@ -8,3 +8,9 @@ Program:
 - presents the top ten most frequent words using histogram
 
 ![Result](screenshot.png)
+
+## usage
+```
+$ racket main.rkt
+```
+Opens window showing frequencies in histrogram.
