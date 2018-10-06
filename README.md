@@ -6,3 +6,5 @@ Program:
 - fetches and consumes rest/json data (http://api.icndb.com/jokes, chuck norris jokes db)
 - calculates word frequencies
 - presents the top ten most frequent words using histogram
+
+![Result](screenshot.png)
