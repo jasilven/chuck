@@ -1,12 +1,11 @@
 #!/usr/bin/env racket
 #lang racket
 
-(require racket/string
-         json
+(require json
          net/http-client
-         threading
+         net/url
          plot
-         net/url)
+         racket/string)
 
 (define (get-json-data host path)
   (let-values ([(status headers in) (http-sendrecv host path)])
@@ -46,9 +45,9 @@
 
 ;; Show 10 most frequently used words found in Chuck Norris jokes
 (define (main)
-  (~> (fetch-jokes "http://api.icndb.com/jokes")
-      (word-frequencies #:sort #t)
-      (take 10)
-      (word-frequencies-histogram #:width 900)))
+  (define jokes (fetch-jokes "http://api.icndb.com/jokes"))
+  (define freq (take (word-frequencies jokes #:sort #t) 10))
+  (word-frequencies-histogram freq #:width 900))
 
 (main)
+
