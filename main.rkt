@@ -2,41 +2,32 @@
 #lang racket
 
 (require json
-         net/http-client
          net/url
-         plot
-         racket/string)
+         plot)
 
-(define (get-json-data host path)
-  (let-values ([(status headers in) (http-sendrecv host path)])
-    (read-json in)))
+(define (fetch-jokes url)
+  (define jokes (call/input-url (string->url url)
+                                get-pure-port
+                                read-json))
+  (for/list ([item (in-list (hash-ref jokes 'value))])
+    (hash-ref item 'joke)))
 
-(define (fetch-jokes from)
-  (let* ([url (string->url from)]
-         [path (path->string (url->path url))]
-         [json (get-json-data (url-host url) path)])
-    (map (λ (j) (hash-ref j 'joke))
-         (hash-ref json 'value))))
+(define (strip-puncts str)
+  (string-replace str #px"\\P{^P}" ""))
 
-(define (strip-punctuation astr)
-  (string-replace astr #px"\\P{^P}" ""))
-
-(define (word-frequencies jokes #:sort do-sort)
+(define (word-frequencies jokes #:sort sort?)
   (define words (make-hash))
-  (define (words->list words)
-    (map (λ (w) (cons (keyword->string (car w)) (cdr w)))
-         (hash->list words)))
-  (for* ([joke (map (λ (j) (string-downcase j)) jokes)]
-         [word (string-split (strip-punctuation joke))]
+  (for* ([joke (in-list jokes)]
+         [word (string-split (strip-puncts joke))]
          #:when (> (string-length word) 3))
-    (hash-update! words (string->keyword word) add1 0))
-  (if do-sort
-      (sort (words->list words) > #:key cdr)
-      (words->list words)))
+    (hash-update! words (string-downcase word) add1 0))
+  (if sort?
+      (sort (hash->list words) > #:key cdr)
+      (hash->list words)))
 
 (define (word-frequencies-histogram freq #:width w)
-  (define (pair->vector p) (vector (car p) (cdr p)))
-  (define vals (map (λ (item) (pair->vector item)) freq))
+  (define vals (for/list ([pair (in-list freq)])
+                 (vector (car pair) (cdr pair))))
   (parameterize ([plot-width w]
                  [plot-new-window? #t]
                  [plot-x-label "words"]
@@ -46,8 +37,8 @@
 ;; Show 10 most frequently used words found in Chuck Norris jokes
 (define (main)
   (define jokes (fetch-jokes "http://api.icndb.com/jokes"))
-  (define freq (take (word-frequencies jokes #:sort #t) 10))
+  (define freq (take (word-frequencies jokes #:sort #t)
+                     10))
   (word-frequencies-histogram freq #:width 900))
 
 (main)
-
